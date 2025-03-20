@@ -30,6 +30,35 @@ def set_selected_item(item_id):
     st.session_state.selected_item_id = item_id
 
 
+# SendGridでメール送信する関数
+def send_report_via_sendgrid(error_event, url_report):
+    SENDGRID_API_KEY = st.secrets["SENDGRID_API_KEY"]
+    SENDGRID_FROM_EMAIL = st.secrets["SENDGRID_FROM_EMAIL"]
+    SENDGRID_TO_EMAIL = st.secrets["SENDGRID_TO_EMAIL"]
+
+    if not all([SENDGRID_API_KEY, SENDGRID_FROM_EMAIL, SENDGRID_TO_EMAIL]):
+        st.error("SendGridの設定が正しく行われていません。")
+        return None
+
+    sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
+    subject = f"【俺の会計監査六法】不具合報告 - {error_event}"
+    content = f"不具合報告が送信されました。\n\n【エラー種別】{error_event}\n【報告URL】{url_report}"
+
+    message = Mail(
+        from_email=SENDGRID_FROM_EMAIL,
+        to_emails=SENDGRID_TO_EMAIL,
+        subject=subject,
+        plain_text_content=content,
+    )
+
+    try:
+        response = sg.send(message)
+        return response.status_code
+    except Exception as e:
+        st.error(f"メール送信に失敗しました: {str(e)}")
+        return None
+
+
 with st.sidebar:
     st.title("俺の会計監査六法 ver.2025")
     search_term = st.text_input("項目名を検索", "")
@@ -92,68 +121,32 @@ if st.session_state.selected_item_id is not None:
                 width=1920,
                 height=1080,
             )
+
+        # -----------------------------
+        # リンク報告セクション
+        # -----------------------------
+        st.markdown("---")
+        st.subheader("不具合報告")
+        st.write("このページに不具合を見つけた場合、以下のフォームからご報告ください。")
+
+        with st.form("report_form", clear_on_submit=True):
+            error_event = st.radio(
+                "報告内容",
+                options=["リンク切れ", "誤リンク", "リンクが古い"],
+                horizontal=True,
+                help="リンクに発生しているエラーの種類を選択してください。",
+            )
+            submit_report = st.form_submit_button("送信")
+            if submit_report:
+                with st.spinner("送信中です...お待ちください"):
+                    status = send_report_via_sendgrid(error_event, item["URL"])
+                if status and status == 202:
+                    st.success("ご報告ありがとうございます。確認後、対応いたします。")
+                else:
+                    st.error("報告送信中にエラーが発生しました。")
 else:
     st.info("サイドバーから表示したい項目を選択してください。")
 
-# -----------------------------
-# リンク報告セクション
-# -----------------------------
-st.markdown("---")
-st.subheader("不具合報告")
-# 選択中の項目があればそのURLを初期値として設定、なければ空欄
-default_url = item["URL"] if st.session_state.selected_item_id is not None else ""
-st.write("リンク切れや誤リンクを見つけた場合、以下のフォームからご報告ください。")
-
-
-# SendGridでメール送信する関数
-def send_report_via_sendgrid(error_event, url_report):
-    SENDGRID_API_KEY = st.secrets["SENDGRID_API_KEY"]
-    SENDGRID_FROM_EMAIL = st.secrets["SENDGRID_FROM_EMAIL"]
-    SENDGRID_TO_EMAIL = st.secrets["SENDGRID_TO_EMAIL"]
-
-    if not all([SENDGRID_API_KEY, SENDGRID_FROM_EMAIL, SENDGRID_TO_EMAIL]):
-        st.error("SendGridの設定が正しく行われていません。.envを確認してください。")
-        return None
-
-    sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
-    subject = f"【俺の会計監査六法】不具合報告 - {error_event}"
-    content = f"不具合報告が送信されました。\n\n【エラー種別】{error_event}\n【報告URL】{url_report}"
-
-    message = Mail(
-        from_email=SENDGRID_FROM_EMAIL,
-        to_emails=SENDGRID_TO_EMAIL,
-        subject=subject,
-        plain_text_content=content,
-    )
-
-    try:
-        response = sg.send(message)
-        return response.status_code
-    except Exception as e:
-        st.error(f"メール送信に失敗しました: {str(e)}")
-        return None
-
-
-with st.form("report_form", clear_on_submit=True):
-    error_event = st.radio(
-        "報告内容",
-        options=["リンク切れ", "誤リンク", "リンクが古い"],
-        horizontal=True,
-        help="リンクに発生しているエラーの種類を選択してください。",
-    )
-    url_report = st.text_input(
-        "該当リンクのURL",
-        value=default_url,
-        help="報告するリンクのURLを入力してください。",
-    )
-    submit_report = st.form_submit_button("送信")
-    if submit_report:
-        with st.spinner("送信中です...お待ちください"):
-            status = send_report_via_sendgrid(error_event, url_report)
-        if status and status == 202:
-            st.success("ご報告ありがとうございます。確認後、対応いたします。")
-        else:
-            st.error("報告送信中にエラーが発生しました。")
 
 st.markdown(
     """
