@@ -96,9 +96,7 @@ if st.session_state.selected_item_id is not None:
             unsafe_allow_html=True,
         )
 
-        with st.expander(
-            "ヘルプ：「～で接続が拒否されました。」が表示された場合", expanded=False
-        ):
+        with st.expander("ヘルプ：ページが表示されない場合", expanded=False):
             st.info(
                 "上記の「新しいタブで開く」を使用してください。それでも表示されない場合はページ下部の不具合報告フォームからご報告ください。"
             )
