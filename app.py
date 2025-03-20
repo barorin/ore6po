@@ -84,13 +84,25 @@ if st.session_state.selected_item_id is not None:
     selected_df = df[df["ID"] == st.session_state.selected_item_id]
     if not selected_df.empty:
         item = selected_df.iloc[0]
+
         st.markdown(
             f"""
-            <a href="{item["URL"]}" target="_blank" rel="noopener noreferrer">
+            <a href="{item["URL"]}" target="_blank" rel="noopener noreferrer"
+            style="display: inline-block; color: #ffffff; background-color: #0066cc;
+            padding: 8px 15px; text-decoration: none; border-radius: 4px;
+            text-align: center; margin-bottom: 10px; font-weight: 500;">
                 新しいタブで開く
             </a>""",
             unsafe_allow_html=True,
         )
+
+        with st.expander(
+            "ヘルプ：「～で接続が拒否されました。」が表示された場合", expanded=False
+        ):
+            st.info(
+                "上記の「新しいタブで開く」を使用してください。それでも表示されない場合はページ下部の不具合報告フォームからご報告ください。"
+            )
+
         if item["URL"].lower().endswith(".pdf"):
             try:
                 # PDFファイルをリモートからダウンロード
