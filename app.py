@@ -1,8 +1,8 @@
 import pandas as pd
-import sendgrid  # type: ignore
 import streamlit as st
 import streamlit.components.v1 as components
-from sendgrid.helpers.mail import Mail  # type: ignore
+
+from utils import send_report_via_sendgrid
 
 # ページ設定
 st.set_page_config(page_title="俺の会計監査六法", page_icon="📖", layout="wide")
@@ -26,35 +26,7 @@ def set_selected_item(item_id):
     st.session_state.selected_item_id = item_id
 
 
-# SendGridでメール送信する関数
-def send_report_via_sendgrid(error_event, url_report):
-    SENDGRID_API_KEY = st.secrets["SENDGRID_API_KEY"]
-    SENDGRID_FROM_EMAIL = st.secrets["SENDGRID_FROM_EMAIL"]
-    SENDGRID_TO_EMAIL = st.secrets["SENDGRID_TO_EMAIL"]
-
-    if not all([SENDGRID_API_KEY, SENDGRID_FROM_EMAIL, SENDGRID_TO_EMAIL]):
-        st.error("SendGridの設定が正しく行われていません。")
-        return None
-
-    sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
-    subject = f"【俺の会計監査六法】不具合報告 - {error_event}"
-    content = f"不具合報告が送信されました。\n\n【エラー種別】{error_event}\n【報告URL】{url_report}"
-
-    message = Mail(
-        from_email=SENDGRID_FROM_EMAIL,
-        to_emails=SENDGRID_TO_EMAIL,
-        subject=subject,
-        plain_text_content=content,
-    )
-
-    try:
-        response = sg.send(message)
-        return response.status_code
-    except Exception as e:
-        st.error(f"メール送信に失敗しました: {str(e)}")
-        return None
-
-
+# サイドバー
 with st.sidebar:
     st.title("俺の会計監査六法 ver.2025")
     search_term = st.text_input("項目名を検索", "")
@@ -76,6 +48,7 @@ with st.sidebar:
                 ):
                     set_selected_item(row["ID"])
 
+# メインコンテンツ
 if st.session_state.selected_item_id is not None:
     selected_df = df[df["ID"] == st.session_state.selected_item_id]
     if not selected_df.empty:
@@ -99,13 +72,25 @@ if st.session_state.selected_item_id is not None:
 
         if item["URL"].lower().endswith(".pdf"):
             try:
-                # Googleドキュメントのビューアを使用してPDFを表示
+                # item["URL"]をGoogleドキュメントビューアで表示
                 google_docs_viewer_url = (
-                    f"https://docs.google.com/viewer?url={item["URL"]}&embedded=true"
+                    f"https://docs.google.com/viewer?url={item['URL']}&embedded=true"
                 )
                 components.iframe(google_docs_viewer_url, width=1920, height=1080)
+
+                # item["URL2"]が存在し、空文字やNaNでない場合は追加表示
+                if (
+                    pd.notnull(item["URL2"])
+                    and isinstance(item["URL2"], str)
+                    and item["URL2"].strip() != ""
+                ):
+                    google_docs_viewer_url2 = (
+                        "https://docs.google.com/viewer?url="
+                        + f"{item['URL2']}&embedded=true"
+                    )
+                    components.iframe(google_docs_viewer_url2, width=1920, height=1080)
             except Exception as e:
-                st.error(e)
+                st.error(f"ドキュメントの読み込み中にエラーが発生しました: {e}")
         else:
             components.html(
                 f"""
@@ -121,9 +106,7 @@ if st.session_state.selected_item_id is not None:
                 height=1080,
             )
 
-        # -----------------------------
         # リンク報告セクション
-        # -----------------------------
         st.markdown("---")
         st.subheader("不具合報告")
         st.write("このページに不具合を見つけた場合、以下のフォームからご報告ください。")
