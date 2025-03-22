@@ -1,12 +1,8 @@
-import tempfile
-
 import pandas as pd
-import requests
 import sendgrid  # type: ignore
 import streamlit as st
 import streamlit.components.v1 as components
 from sendgrid.helpers.mail import Mail  # type: ignore
-from streamlit_pdf_viewer import pdf_viewer  # type: ignore
 
 # ページ設定
 st.set_page_config(page_title="俺の会計監査六法", page_icon="📖", layout="wide")
@@ -103,18 +99,11 @@ if st.session_state.selected_item_id is not None:
 
         if item["URL"].lower().endswith(".pdf"):
             try:
-                # PDFファイルをリモートからダウンロード
-                response = requests.get(item["URL"])
-                if response.status_code == 200:
-                    # 一時ファイルに保存してパスを取得
-                    with tempfile.NamedTemporaryFile(
-                        delete=False, suffix=".pdf"
-                    ) as tmp_file:
-                        tmp_file.write(response.content)
-                        pdf_path = tmp_file.name
-                    pdf_viewer(pdf_path, height=1080)
-                else:
-                    st.error("PDFの取得に失敗しました。")
+                # Googleドキュメントのビューアを使用してPDFを表示
+                google_docs_viewer_url = (
+                    f"https://docs.google.com/viewer?url={item["URL"]}&embedded=true"
+                )
+                components.iframe(google_docs_viewer_url, width=1920, height=1080)
             except Exception as e:
                 st.error(e)
         else:
