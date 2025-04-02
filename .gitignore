@@ -1,5 +1,5 @@
 .venv/
 .mypy_cache/
-.__py_cache__/
+__pycache__
 input/
 secrets.toml
