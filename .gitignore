@@ -1,4 +1,5 @@
 .venv/
 .mypy_cache/
+.__py_cache__/
 input/
 secrets.toml
