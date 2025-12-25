@@ -20,10 +20,18 @@ df = load_data()
 
 if "selected_item_id" not in st.session_state:
     st.session_state.selected_item_id = None
+if "show_dify" not in st.session_state:
+    st.session_state.show_dify = False
 
 
 def set_selected_item(item_id):
     st.session_state.selected_item_id = item_id
+    st.session_state.show_dify = False
+
+
+def set_show_dify():
+    st.session_state.show_dify = True
+    st.session_state.selected_item_id = None
 
 
 # サイドバー
@@ -35,6 +43,8 @@ with st.sidebar:
     )
     st.write(f"表示件数: {len(filtered_df)}件")
     st.markdown("---")
+    if st.button("🤖に質問する", use_container_width=True):
+        set_show_dify()
     sections = filtered_df["セクション名"].unique()
     for section in sections:
         with st.expander(f"{section}", expanded=bool(search_term)):
@@ -49,7 +59,30 @@ with st.sidebar:
                     set_selected_item(row["ID"])
 
 # メインコンテンツ
-if st.session_state.selected_item_id is not None:
+if st.session_state.get("show_dify"):
+    st.markdown("### 🤖日本の会計基準に詳しい君2号")
+    with st.expander("ヘルプ：使い方", expanded=False):
+        st.info(
+            "シークレットコードを入力し、「Start Chat」を押してください。会計基準等に則って回答してくれます。"
+        )
+    st.error(
+        "機密情報の入力は避けてください。また、回答内容は必ずご自身でレビューしてください。",
+        icon="🚨",
+    )
+    components.html(
+        """
+        <iframe
+         src="https://udify.app/chatbot/zP13RfYRyo8rOxis"
+         style="width: 100%; height: 100%; min-height: 700px"
+         frameborder="0"
+         allow="microphone">
+        </iframe>
+        """,
+        height=800,
+        scrolling=True,
+    )
+
+elif st.session_state.selected_item_id is not None:
     selected_df = df[df["ID"] == st.session_state.selected_item_id]
     if not selected_df.empty:
         item = selected_df.iloc[0]
@@ -131,6 +164,26 @@ else:
     st.markdown(
         "姉妹サイト：[俺の監査実務ハンドブック](https://orekansa.streamlit.app/)"
     )
+    # 以下、更新履歴
+    st.markdown("### 📋 更新履歴")
+    st.markdown("以下の更新を反映しました。")
+
+    # updates = [
+    #     {
+    #         "date": "20YY/MM/DD",
+    #         "title": "title",
+    #         "url": "https://xxxx",
+    #     },
+    #     # 新しい更新情報はここに追加していけます
+    # ]
+
+    # for update in updates:
+    #     col1, col2 = st.columns([1, 4])
+    #     with col1:
+    #         st.markdown(f"**{update['date']}**")
+    #     with col2:
+    #         st.markdown(f"[{update['title']}]({update['url']})")
+    #     st.markdown("---")
 
 
 st.markdown(
