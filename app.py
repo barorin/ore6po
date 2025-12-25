@@ -43,7 +43,7 @@ with st.sidebar:
     )
     st.write(f"表示件数: {len(filtered_df)}件")
     st.markdown("---")
-    if st.button("🤖に質問する", use_container_width=True):
+    if st.button("AIに質問する", use_container_width=True):
         set_show_dify()
     sections = filtered_df["セクション名"].unique()
     for section in sections:
@@ -60,7 +60,7 @@ with st.sidebar:
 
 # メインコンテンツ
 if st.session_state.get("show_dify"):
-    st.markdown("### 🤖日本の会計基準に詳しい君2号")
+    st.markdown("### 日本の会計基準に詳しい君2号")
     with st.expander("ヘルプ：使い方", expanded=False):
         st.info(
             "シークレットコードを入力し、「Start Chat」を押してください。会計基準等に則って回答してくれます。"
